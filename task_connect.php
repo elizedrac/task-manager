@@ -1,20 +1,17 @@
 <?php
+function connect(): PDO {
+  $host = getenv('DB_HOST');
+  $port = getenv('DB_PORT') ?: '3306';
+  $db   = getenv('DB_NAME');
+  $user = getenv('DB_USER');
+  $pass = getenv('DB_PASS');
+  $charset = 'utf8mb4';
 
-function connect() {
-	$hostname = 'localhost';
-	$dbname ='task';
-
-	$username = 'task';
-	$password = 'task';
-
-	$dsn = "mysql:host=$hostname;dbname=$dbname";
-	
-
-	
-	try {
-		return new PDO($dsn, $username, $password);
-	} catch (Exception $e){
-		echo ($e->getMessage());
-
-	}
+  $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
+  $options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+  ];
+  return new PDO($dsn, $user, $pass, $options);
 }
