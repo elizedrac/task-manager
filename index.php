@@ -108,7 +108,7 @@
       <h4>Current Selected Date: <?=$date?> </h4>
     </div>
 
-    <br></br><center><h1>Task Manager</h1></center>
+    <br></br><center><h1>Bookings Manager</h1></center>
 
   </head>
 
@@ -117,7 +117,7 @@
 
     <!-- div containing submission form -->
     <center><br></br><div id="qBox">
-    <h2>Input Task</h2>
+    <h2>Input Booking</h2>
 
     <?php
     //handles submit button
@@ -221,7 +221,7 @@
     ?>
 
       <form method="post"; action="<?php echo $_SERVER['PHP_SELF']; ?>">
-        <input type="text" placeholder="Task Description" name="description">
+        <input type="text" placeholder="Booking Description" name="description">
         <br></br>
 
         <input type="text" placeholder="Price" name="price">
