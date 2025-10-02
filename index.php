@@ -1,4 +1,6 @@
 <?php
+  ob_start(); // ensures resfreshing works properly
+
   //connect to database
   include "task_connect.php";
   $db = connect();
@@ -15,6 +17,10 @@
   //task editing variables
   $change = FALSE;
   $idEdit = 0;
+
+  //totals variables
+  $totalBookings = 0;
+  $totalPrice = 0;
 ?>
 
 
@@ -25,12 +31,28 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Task Manager</title>
+    <title>Bookings Manager</title>
     
     <!-- main css code -->
     <style>
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;      
+          margin: 16px auto 0;
+          padding: 0 16px;
+        }
+
+        main {
+          margin: 24px auto;
+          padding: 0 16px;
+          text-align: center;            
+        }
+
         #datePicker {
           border: 2px solid black;
+          left: 10px;
+          top: 140px;
           background-color: lightsalmon;
           padding: 10px;
           width: 300px;
@@ -40,6 +62,14 @@
           border: 5px solid black;
           width: 500px;
           background-color: floralwhite;
+        }
+
+        #totals {
+          margin-top: 40px;             
+          width: 220px;
+          border: 1px solid black;
+          background-color: floralwhite;
+          float: right;
         }
 
         .buttons {
@@ -83,40 +113,48 @@
           color: salmon;
         }
     </style>
-
-
-    <!-- code to select date of displayed tasks -->
-    <div id="datePicker"><center>
-      <h3>Select Day</h3>
-      <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST">
-      <input class="dates" type="date" name="today" value="<?php echo $date;?>">
-      <input type="submit" name="date_submit" style="background-color: floralwhite;">
-      </form>
-      <!-- date stored and obtained from database -->
-      <?php if(isset($_POST['date_submit']) && !empty($_POST['date'])){
-        $date = $_POST['today'];
-        $db->query("UPDATE currDate SET currDate = '$date' WHERE id = 1");
-
-        $day = date('d', strtotime($_POST['today']));
-        $month = date('m', strtotime($_POST['today']));
-      }
-
-      $dateQuery = $db->query("SELECT * FROM currDate WHERE id = 1");
-      $date = $dateQuery->fetch(PDO::FETCH_ASSOC);
-      $date = date("m/d/y", strtotime($date['currDate']));
-      ?>
-      <h4>Current Selected Date: <?=$date?> </h4>
-    </div>
-
-    <br></br><center><h1>Bookings Manager</h1></center>
-
   </head>
 
 
   <main>
+    <div class="header">
+      <!-- code to select date of displayed tasks -->
+      <div id="datePicker">
+        <h3>Select Day</h3>
+        <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST">
+        <!-- defaults to todays date in greek time -->
+        <input class="dates" type="date" name="today" value="<?php echo date('Y-m-d');?>">
+        <input type="submit" name="date_submit" style="background-color: floralwhite;">
+        </form>
+        <!-- date stored and obtained from database -->
+        <?php if(isset($_POST['date_submit'])) {
+          if (!empty($_POST['today'])) {
+              $date = $_POST['today'];
+              $db->query("UPDATE currDate SET currDate = '$date' WHERE id = 1");
+
+              $day = date('d', strtotime($_POST['today']));
+              $month = date('m', strtotime($_POST['today']));
+          } else {
+              ?>
+              <center><p style = "color: black">Please fill out all fields before submitting</p></center>
+              <?php
+          }
+        }
+
+        $dateQuery = $db->query("SELECT * FROM currDate WHERE id = 1");
+        $date = $dateQuery->fetch(PDO::FETCH_ASSOC);
+        $date = date("m/d/y", strtotime($date['currDate']));
+        ?>
+        <h4>Current Selected Date: <?=$date?> </h4>
+      </div>
+    </div>
+
+    <br></br>
+    <center><h1>Bookings Manager</h1></center>
 
     <!-- div containing submission form -->
-    <center><br></br><div id="qBox">
+    <br></br>
+    <center><div id="qBox">
     <h2>Input Booking</h2>
 
     <?php
@@ -135,15 +173,19 @@
             $test->bindValue(':description', $description, PDO::PARAM_STR); //ensures correct parameter
             $test->bindValue(':id', $id, PDO::PARAM_INT); //ensures correct parameter
             $test->execute();
+            header('Location: ' . $_SERVER['PHP_SELF']);
+            exit;
 
           }
 
-          if(!empty($_POST['price'])) {
+          if($_POST['price'] !== '') {
             $description = $_POST['price'];
             $test = $db->prepare("UPDATE tasks SET price = :description WHERE id = :id");
             $test->bindValue(':description', $description); //ensures correct parameter
             $test->bindValue(':id', $id, PDO::PARAM_INT); //ensures correct parameter
             $test->execute();
+            header('Location: ' . $_SERVER['PHP_SELF']);
+            exit;
           }
 
           if(!empty($_POST['company'])) {
@@ -152,6 +194,8 @@
             $test->bindValue(':description', $description, PDO::PARAM_STR); //ensures correct parameter
             $test->bindValue(':id', $id, PDO::PARAM_INT); //ensures correct parameter
             $test->execute();
+            header('Location: ' . $_SERVER['PHP_SELF']);
+            exit;
           }
 
           if(!empty($_POST['time'])) {
@@ -159,13 +203,15 @@
             $test = $db->prepare("UPDATE tasks SET currTime = '$description' WHERE id = :id");
             $test->bindValue(':id', $id, PDO::PARAM_INT); //ensures correct parameter
             $test->execute();
+            header('Location: ' . $_SERVER['PHP_SELF']);
+            exit;
           }
 
         
       } else {
 
           //check if all values are complete first
-          if(!empty($_POST['description']) && !empty($_POST['price']) && !empty($_POST['company']) && !empty($_POST['time'])) {
+          if(!empty($_POST['description']) && ($_POST['price'] !== '') && !empty($_POST['company']) && !empty($_POST['time'])) {
             $description = $_POST['description'];
             $price = $_POST['price'];
             $company = $_POST['company'];
@@ -178,6 +224,8 @@
             $test->bindValue(':price', $price); //ensures correct parameter
             $test->bindValue(':company', $company, PDO::PARAM_STR); //ensures correct parameter
             $test->execute();
+            header('Location: ' . $_SERVER['PHP_SELF']);
+            exit;
 
           } else {
             ?>
@@ -198,6 +246,8 @@
       $test = $db->prepare("DELETE FROM tasks WHERE id = :id");
       $test->bindValue(':id', $id, PDO::PARAM_INT); //ensures correct parameter
       $test->execute();
+      header('Location: ' . $_SERVER['PHP_SELF']);
+      exit;
 
     } elseif (isset($_POST['complete'])){
       //handles complete/incomplete button submission
@@ -206,7 +256,8 @@
       $test = $db->prepare("UPDATE tasks SET completed = !$val WHERE id = :id");
       $test->bindValue(':id', $id, PDO::PARAM_INT); //ensures correct parameter
       $test->execute();
-
+      header('Location: ' . $_SERVER['PHP_SELF']);
+      exit;
     } elseif (isset($_POST['edit'])){
       //handles edit button submission
       $idEdit = $_POST['id'];
@@ -249,7 +300,7 @@
     <table style="border-collapse: collapse;">
     <!-- display column names -->
     <tr>
-        <th>Task Description</th>
+        <th>Booking Description</th>
         <th>Price</th>
         <th>Start Time</th>
         <th>Company</th>
@@ -288,6 +339,8 @@
           <td>
           <?php
             echo $result['price'] . "</td>";
+            $totalBookings++;
+            $totalPrice += $result['price'];
           ?>
 
           <td>
@@ -354,10 +407,16 @@
 
     </table>
 
+    <div id="totals">
+        <p>Total Bookings: <?php echo $totalBookings; ?></p>
+        <p>Total Price: <?php echo $totalPrice; ?></p>
+    </div>
+
     <br></br>
     <br></br>
     <br></br>
 
+  <?php ob_end_flush(); ?>
   </main>
 
 
